@@ -8,9 +8,10 @@ from google.cloud import firestore
 app = Flask(__name__)
 db = firestore.Client()
 auth_key = 'Openapikey'
+ai_model = 'gpt-4o-mini'
 
 
-@app.route("/classify", methods=['POST'])
+@app.route("/state", methods=['POST'])
 def classify():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
@@ -32,7 +33,7 @@ def classify():
         return jsonify(cached_data['response'])
 
     completion = client.chat.completions.create(
-        model='gpt-4o-mini',
+        model=ai_model,
         messages=[
             {"role": "system", "content": "This GPT is designed to classify transcripts of calls between a caller and "
                                           "a representative. It will identify and categorize the final state of the "
@@ -75,6 +76,7 @@ def update_transcript_information(transcript_hash, response, current_time):
     doc_ref.set({
         'transcript_hash': transcript_hash,
         'response': response,
+        'model': ai_model,
         'timestamp': current_time
     })
 
