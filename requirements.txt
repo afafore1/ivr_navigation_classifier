@@ -1,0 +1,6 @@
+gunicorn
+Werkzeug
+openai
+flask
+google-cloud-firestore
+google-auth
