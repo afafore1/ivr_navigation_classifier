@@ -12,7 +12,11 @@ auth_key = 'Openapikey'
 
 @app.route("/classify", methods=['POST'])
 def classify():
-    open_api_key = request.headers.get(auth_key)
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization token missing or invalid'}), 401
+
+    open_api_key = auth_header.replace('Bearer ', '').strip()
     if not open_api_key:
         return jsonify({"error": "Authorization token missing"}), 401
 
@@ -44,11 +48,16 @@ def classify():
         ]
     )
 
+    current_time = datetime.utcnow().date().isoformat()
     response = completion.choices[0].message
     content = response.content
-    update_transcript_information(transcript_hash, content)
+    update_transcript_information(transcript_hash, content, current_time)
 
-    return jsonify(response.content)
+    return jsonify({
+        'response': content,
+        'timestamp': current_time,
+        'status': 'success'
+    })
 
 
 def get_cached_data(transcript_hash):
@@ -61,12 +70,12 @@ def get_cached_data(transcript_hash):
     return None
 
 
-def update_transcript_information(transcript_hash, response):
+def update_transcript_information(transcript_hash, response, current_time):
     doc_ref = db.collection('transcripts').document(transcript_hash)
     doc_ref.set({
         'transcript_hash': transcript_hash,
         'response': response,
-        'timestamp': datetime.utcnow()
+        'timestamp': current_time
     })
 
 
